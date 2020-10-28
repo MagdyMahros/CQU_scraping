@@ -50,7 +50,7 @@ for j in pages:
                     course_links.append(link)
 
 # FILE
-course_links_file_path = os.getcwd().replace('\\', '/') + '/QUC_bachelor_links.txt'
+course_links_file_path = os.getcwd().replace('\\', '/') + '/CQU_bachelor_links.txt'
 course_links_file = open(course_links_file_path, 'w')
 for i in course_links:
     if i is not None and i != "" and i != "\n":
