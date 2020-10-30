@@ -3,7 +3,7 @@
     * company: Fresh Futures/Seeka Technology
     * position: IT Intern
     * date: 28-10-20
-    * description:This script extracts the corresponding Postgraduate courses details and tabulate it.
+    * description:This script extracts the corresponding undergraduate courses details and tabulate it.
 """
 
 import csv
@@ -45,7 +45,10 @@ course_data = {'Level_Code': '', 'University': 'CQ University', 'City': '', 'Cou
                'Career_Outcomes': '', 'Online': '', 'Offline': '', 'Distance': '', 'Face_to_Face': '',
                'Blended': '', 'Remarks': ''}
 
-possible_cities = {'albany': 'Albany', 'perth': 'Perth'}
+possible_cities = {'rockhampton': 'Rockhampton', 'cairns': 'Cairns', 'bundaberg': 'Bundaberg', 'townsville': 'Townsville',
+                   'online': 'Online', 'gladstone': 'Gladstone', 'mackay': 'Mackay', 'mixed': 'Online', 'yeppoon': 'Yeppoon',
+                   'brisbane': 'Brisbane', 'sydney': 'Sydney', 'queensland': 'Queensland', 'melbourne': 'Melbourne',
+                   'albany': 'Albany', 'perth': 'Perth', 'adelaide': 'Adelaide', 'noosa': 'Noosa', 'emerald': 'Emerald'}
 possible_languages = {'Japanese': 'Japanese', 'French': 'French', 'Italian': 'Italian', 'Korean': 'Korean',
                       'Indonesian': 'Indonesian', 'Chinese': 'Chinese', 'Spanish': 'Spanish'}
 
@@ -102,12 +105,20 @@ for each_url in course_links_file:
             course_data['Course_Lang'] = 'English'
     print('COURSE LANGUAGE: ', course_data['Course_Lang'])
 
-    # DURATION & DURATION_TIME
+    # DURATION & DURATION_TIME / PART-TIME & FULL-TIME
     # for bachelor
     duration_span_tag = soup.find('span', class_='course-info-highlight', text=re.compile('DURATION', re.IGNORECASE))
     if duration_span_tag:
         duration_p_1 = duration_span_tag.find_next('p')
         if duration_p_1:
+            if 'part-time' in duration_p_1.get_text().lower():
+                course_data['Part_Time'] = 'yes'
+            else:
+                course_data['Part_Time'] = 'no'
+            if 'full-time' in duration_p_1.get_text().lower():
+                course_data['Full_Time'] = 'yes'
+            else:
+                course_data['Full_Time'] = 'no'
             converted_duration = dura.convert_duration(duration_p_1.get_text().strip())
             if converted_duration is not None:
                 duration_list_1 = list(converted_duration)
@@ -132,6 +143,14 @@ for each_url in course_links_file:
                     if duration_tag:
                         duration_p = duration_tag.find_next_sibling('p')
                         if duration_p:
+                            if 'part-time' in duration_p.get_text().lower().strip():
+                                course_data['Part_Time'] = 'yes'
+                            else:
+                                course_data['Part_Time'] = 'no'
+                            if 'full-time' in duration_p.get_text().lower().strip():
+                                course_data['Full_Time'] = 'yes'
+                            else:
+                                course_data['Full_Time'] = 'no'
                             condv_duration = dura.convert_duration(duration_p.get_text().strip())
                             if condv_duration is not None:
                                 duration_list = list(condv_duration)
@@ -151,6 +170,7 @@ for each_url in course_links_file:
                                 course_data['Duration_Time'] = 'Not available'
                                 print('DURATION / DURATION TIME: ',
                                       str(course_data['Duration']) + ' / ' + str(course_data['Duration_Time']))
+            print('PART-TIME/FULL-TIME: ', course_data['Part_Time'] + ' / ' + course_data['Full_Time'])
 
         # DELIVERY
         delivery_title = soup.find('span', class_='course-info-highlight', text=re.compile('STUDY MODES', re.IGNORECASE))
@@ -198,6 +218,35 @@ for each_url in course_links_file:
                 if 'domestic' in tabs_text and 'international' in tabs_text:
                     course_data['Availability'] = 'A'
                 print('AVAILABILITY: ' + course_data['Availability'])
+    # CITY
+    availability_tag = soup.find('span', class_='course-info-highlight', text=re.compile('AVAILABILITY', re.IGNORECASE))
+    if availability_tag:
+        availability_p = availability_tag.find_next_sibling('p')
+        if availability_p:
+            av_text = availability_p.get_text().strip().lower()
+            av_text_list = re.findall(r"[\w']+", av_text)
+            if av_text_list:
+                for city in av_text_list:
+                    actual_cities.append(city)
+            else:
+                actual_cities.append('rockhampton')
+            print('CITY: ', actual_cities)
+
+    # PREREQUISITE_1/PREREQUISITE_TIME
+    rank_tag = soup.find('span', class_='course-info-highlight', text=re.compile('RANK CUT OFF', re.IGNORECASE))
+    if rank_tag:
+        rank_p = rank_tag.find_next_sibling('p')
+        if rank_p:
+            atar_ = rank_p.get_text().strip().split('ATAR:')
+            if atar_:
+                atar = atar_[1]
+                if atar:
+                    course_data['Prerequisite_1_grade'] = atar
+                    course_data['Prerequisite_1'] = 'year 12'
+    else:
+        course_data['Prerequisite_1'] = 'N/A'
+        course_data['Prerequisite_1_grade'] = 'N/A'
+    print('ATAR: ', course_data['Prerequisite_1_grade'])
 
     # FEES
     # for domestic
