@@ -37,10 +37,10 @@ course_links_file = open(course_links_file_path, 'r')
 csv_file_path = Path(os.getcwd().replace('\\', '/'))
 csv_file = csv_file_path.__str__() + '/CQU_undergrad.csv'
 
-course_data = {'Level_Code': '', 'University': 'Australian Catholic University', 'City': '', 'Country': 'Australia',
+course_data = {'Level_Code': '', 'University': 'CQ University', 'City': '', 'Country': 'Australia',
                'Course': '', 'Int_Fees': '', 'Local_Fees': '', 'Currency': 'AUD', 'Currency_Time': 'year',
-               'Duration': '', 'Duration_Time': '', 'Full_Time': '', 'Part_Time': '', 'Prerequisite_1': 'IELTS',
-               'Prerequisite_2': '', 'Prerequisite_3': '', 'Prerequisite_1_grade': '6.5', 'Prerequisite_2_grade': '',
+               'Duration': '', 'Duration_Time': '', 'Full_Time': '', 'Part_Time': '', 'Prerequisite_1': '',
+               'Prerequisite_2': 'IELTS', 'Prerequisite_3': '', 'Prerequisite_1_grade': '', 'Prerequisite_2_grade': '6.5',
                'Prerequisite_3_grade': '', 'Website': '', 'Course_Lang': '', 'Availability': '', 'Description': '',
                'Career_Outcomes': '', 'Online': '', 'Offline': '', 'Distance': '', 'Face_to_Face': '',
                'Blended': '', 'Remarks': ''}
@@ -56,6 +56,7 @@ faculty_key = TemplateData.faculty_key  # dictionary of course levels
 # GET EACH COURSE LINK
 for each_url in course_links_file:
     actual_cities = []
+    remarks_list = []
     browser.get(each_url)
     pure_url = each_url.strip()
     each_url = browser.page_source
@@ -102,31 +103,146 @@ for each_url in course_links_file:
     print('COURSE LANGUAGE: ', course_data['Course_Lang'])
 
     # DURATION & DURATION_TIME
-    duration_container = soup.find('span', class_='ct-accordion__title',
-                                   text=re.compile('Course Structure', re.IGNORECASE))\
-        .find_parent('label', class_='ct-accordion__header')
-    if duration_container:
-        duration_tag = duration_container.find_next('div', class_='ct-accordion__content').\
-            find('b', text=re.compile('Duration', re.IGNORECASE))
-        if duration_tag:
-            duration_p = duration_tag.find_next_sibling('p')
-            if duration_p:
-                condv_duration = dura.convert_duration(duration_p.get_text().strip())
-                if condv_duration is not None:
-                    duration_list = list(condv_duration)
-                    duration_ = duration_list[0]
-                    duration_time = duration_list[1]
-                    if duration_ == 1 and 'Years' in duration_time:
-                        duration_time = 'Year'
-                    if duration_ == 1 and 'Months' in duration_time:
-                        duration_time = 'Month'
-                    course_data['Duration'] = duration_
-                    course_data['Duration_Time'] = duration_time
-                    print('DURATION / DURATION TIME: ',
-                          str(course_data['Duration']) + ' / ' + str(course_data['Duration_Time']))
+    # for bachelor
+    duration_span_tag = soup.find('span', class_='course-info-highlight', text=re.compile('DURATION', re.IGNORECASE))
+    if duration_span_tag:
+        duration_p_1 = duration_span_tag.find_next('p')
+        if duration_p_1:
+            converted_duration = dura.convert_duration(duration_p_1.get_text().strip())
+            if converted_duration is not None:
+                duration_list_1 = list(converted_duration)
+                duration_1 = duration_list_1[0]
+                duration_time_1 = duration_list_1[1]
+                if duration_1 == 1 and 'Years' in duration_time_1:
+                    duration_time_1 = 'Year'
+                if duration_1 == 1 and 'Months' in duration_time_1:
+                    duration_time_1 = 'Month'
+                course_data['Duration'] = duration_1
+                course_data['Duration_Time'] = duration_time_1
+                print('DURATION / DURATION TIME: ',
+                      str(course_data['Duration']) + ' / ' + str(course_data['Duration_Time']))
+            else:
+                # for certificate
+                duration_container = soup.find('span', class_='ct-accordion__title',
+                                               text=re.compile('Course Structure', re.IGNORECASE))\
+                    .find_parent('label', class_='ct-accordion__header')
+                if duration_container:
+                    duration_tag = duration_container.find_next('div', class_='ct-accordion__content').\
+                        find('b', text=re.compile('Duration', re.IGNORECASE))
+                    if duration_tag:
+                        duration_p = duration_tag.find_next_sibling('p')
+                        if duration_p:
+                            condv_duration = dura.convert_duration(duration_p.get_text().strip())
+                            if condv_duration is not None:
+                                duration_list = list(condv_duration)
+                                duration_ = duration_list[0]
+                                duration_time = duration_list[1]
+                                if duration_ == 1 and 'Years' in duration_time:
+                                    duration_time = 'Year'
+                                if duration_ == 1 and 'Months' in duration_time:
+                                    duration_time = 'Month'
+                                course_data['Duration'] = duration_
+                                course_data['Duration_Time'] = duration_time
+                                print('DURATION / DURATION TIME: ',
+                                      str(course_data['Duration']) + ' / ' + str(course_data['Duration_Time']))
+                            else:
+                                # if not found at all
+                                course_data['Duration'] = 'Not available'
+                                course_data['Duration_Time'] = 'Not available'
+                                print('DURATION / DURATION TIME: ',
+                                      str(course_data['Duration']) + ' / ' + str(course_data['Duration_Time']))
+
+        # DELIVERY
+        delivery_title = soup.find('span', class_='course-info-highlight', text=re.compile('STUDY MODES', re.IGNORECASE))
+        if delivery_title:
+            delivery_p = delivery_title.find_next('p')
+            if delivery_p:
+                delivery_ = delivery_p.get_text().__str__().strip().lower()
+                delivery__ = re.findall(r"[\w']+", delivery_)
+                if 'on' in delivery__ and 'campus' in delivery__:
+                    course_data['Offline'] = 'yes'
+                    course_data['Face_to_Face'] = 'yes'
                 else:
-                    course_data['Duration'] = 'Not available'
-                    course_data['Duration_Time'] = 'Not available'
-                    print('DURATION / DURATION TIME: ',
-                          str(course_data['Duration']) + ' / ' + str(course_data['Duration_Time']))
+                    course_data['Offline'] = 'no'
+                    course_data['Face_to_Face'] = 'no'
+                if 'off' in delivery__ and 'campus' in delivery__:
+                    course_data['Distance'] = 'yes'
+                else:
+                    course_data['Distance'] = 'no'
+                if 'online' in delivery__:
+                    course_data['Online'] = 'yes'
+                else:
+                    course_data['Online'] = 'no'
+                if 'mixed' in delivery__ and 'mode' in delivery__:
+                    course_data['Blended'] = 'yes'
+                    course_data['Offline'] = 'yes'
+                    course_data['Online'] = 'yes'
+                    course_data['Face_to_Face'] = 'yes'
+                else:
+                    course_data['Blended'] = 'no'
+            print('DELIVERY: online: ' + course_data['Online'] + ' offline: ' + course_data[
+                'Offline'] + ' face to face: ' +
+                  course_data['Face_to_Face'] + ' blended: ' + course_data['Blended'] + ' distance: ' + course_data[
+                      'Distance'])
+
+        # AVAILABILITY
+        tabs_container = soup.find('div', class_='ct-tabs__wrapper')
+        if tabs_container:
+            avail_tabs = tabs_container.find_all('a', class_='tabs-button')
+            if avail_tabs:
+                tabs_text = [text.get_text().lower() for text in avail_tabs]
+                if 'domestic' in tabs_text:
+                    course_data['Availability'] = 'D'
+                if 'international' in tabs_text:
+                    course_data['Availability'] = 'I'
+                if 'domestic' in tabs_text and 'international' in tabs_text:
+                    course_data['Availability'] = 'A'
+                print('AVAILABILITY: ' + course_data['Availability'])
+
+    # FEES
+    # for domestic
+    fees_tag = soup.find('span', class_='course-info-highlight', text=re.compile('FULL COURSE COST', re.IGNORECASE))
+    if fees_tag:
+        fees_p = fees_tag.find_next('p')
+        if fees_p:
+            # print(fees_p.get_text())
+            fees = re.compile(r'(.+)\(2021\)')
+            fee = fees.search(fees_p.get_text())
+            if fee:
+                fee_n = fee.group(1).replace('$', '')
+                course_data['Local_Fees'] = fee_n
+                remarks_list.append('The local fees are for the full course')
+            else:
+                course_data['Local_Fees'] = 'Not available for 2021'
+        print('LOCAL FEES: ', course_data['Local_Fees'])
+    # for international
+    # navigate to International tab
+    tabs_container_1 = soup.find('div', class_='ct-tabs__wrapper')
+    if tabs_container_1:
+        avail_tabs_1 = tabs_container_1.find_all('a', class_='tabs-button', href=True)
+        if avail_tabs_1:
+            tabs_text_1 = [text.get_text().lower() for text in avail_tabs_1]
+            if 'international' in tabs_text_1:
+                try:
+                    browser.execute_script("arguments[0].click();", WebDriverWait(browser, 5).until(
+                        EC.element_to_be_clickable((By.XPATH,
+                                                    '//*[@id="main"]/div[1]/div/article/div[3]/div/div/a[2]'))))
+                except TimeoutException:
+                    print('Timeout Exception')
+                    pass
+                # grab the price
+                fees_tag_1 = soup.find('div', class_='ct-tabs__wrapper')
+                if fees_tag_1:
+                    fees_p_1 = fees_tag_1.find_next('p')
+                    if fees_p_1:
+                        fees_1 = re.compile(r'(.+)\(2021\)')
+                        fee_1 = fees_1.search(fees_p_1.get_text())
+                        if fee_1:
+                            fee_n_1 = fee_1.group(1).replace('$', '')
+                            course_data['Int_Fees'] = fee_n_1
+                            remarks_list.append('The international fees are for the full course')
+                        else:
+                            course_data['Int_Fees'] = 'Not available for 2021'
+                        print('INTERNATIONAL FEE: ', course_data['Int_Fees'])
+
 
