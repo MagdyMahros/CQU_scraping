@@ -40,7 +40,7 @@ csv_file = csv_file_path.__str__() + '/CQU_undergrad.csv'
 course_data = {'Level_Code': '', 'University': 'CQ University', 'City': '', 'Country': 'Australia',
                'Course': '', 'Int_Fees': '', 'Local_Fees': '', 'Currency': 'AUD', 'Currency_Time': 'year',
                'Duration': '', 'Duration_Time': '', 'Full_Time': '', 'Part_Time': '', 'Prerequisite_1': '',
-               'Prerequisite_2': 'IELTS', 'Prerequisite_3': '', 'Prerequisite_1_grade': '', 'Prerequisite_2_grade': '6.5',
+               'Prerequisite_2': 'IELTS', 'Prerequisite_3': '', 'Prerequisite_1_grade': '', 'Prerequisite_2_grade': '6.0',
                'Prerequisite_3_grade': '', 'Website': '', 'Course_Lang': '', 'Availability': '', 'Description': '',
                'Career_Outcomes': '', 'Online': '', 'Offline': '', 'Distance': '', 'Face_to_Face': '',
                'Blended': '', 'Remarks': ''}
@@ -226,8 +226,41 @@ for each_url in course_links_file:
             av_text = availability_p.get_text().strip().lower()
             av_text_list = re.findall(r"[\w']+", av_text)
             if av_text_list:
-                for city in av_text_list:
-                    actual_cities.append(city)
+                if 'rockhampton' in av_text_list:
+                    actual_cities.append('rockhampton')
+                if 'cairns' in av_text_list:
+                    actual_cities.append('cairns')
+                if 'bundaberg' in av_text_list:
+                    actual_cities.append('bundaberg')
+                if 'townsville' in av_text_list:
+                    actual_cities.append('townsville')
+                if 'online' in av_text_list:
+                    actual_cities.append('online')
+                if 'gladstone' in av_text_list:
+                    actual_cities.append('gladstone')
+                if 'mackay' in av_text_list:
+                    actual_cities.append('mackay')
+                if 'mixed' in av_text_list:
+                    actual_cities.append('online')
+                if 'brisbane' in av_text_list:
+                    actual_cities.append('brisbane')
+                if 'yeppoon' in av_text_list:
+                    actual_cities.append('yeppoon')
+                if 'sydney' in av_text_list:
+                    actual_cities.append('sydney')
+                if 'melbourne' in av_text_list:
+                    actual_cities.append('melbourne')
+                if 'queensland' in av_text_list:
+                    actual_cities.append('queensland')
+                if 'albany' in av_text_list:
+                    actual_cities.append('albany')
+                if 'perth' in av_text_list:
+                    actual_cities.append('perth')
+                if 'adelaide' in av_text_list:
+                    actual_cities.append('adelaide')
+                if 'noosa' in av_text_list:
+                    actual_cities.append('noosa')
+
             else:
                 actual_cities.append('rockhampton')
             print('CITY: ', actual_cities)
@@ -247,6 +280,21 @@ for each_url in course_links_file:
         course_data['Prerequisite_1'] = 'N/A'
         course_data['Prerequisite_1_grade'] = 'N/A'
     print('ATAR: ', course_data['Prerequisite_1_grade'])
+
+    # CAREER OUTCOMES
+    career_container = soup.find('span', class_='ct-accordion__title',
+                                   text=re.compile('Career Opportunities and Outcomes', re.IGNORECASE)) \
+        .find_parent('label', class_='ct-accordion__header')
+    if career_container:
+        career_p = career_container.find_next('div', class_='ct-accordion__content').find('p')
+        if career_p:
+            career_text = career_p.get_text().strip()
+            print('CAREER: ', career_text)
+        else:
+            career_div = career_container.find_next('div', class_='ct-accordion__content')
+            if career_div:
+                career_div_text = career_div.get_text().strip()
+                print('CAREER: ', career_div_text)
 
     # FEES
     # for domestic
@@ -294,4 +342,35 @@ for each_url in course_links_file:
                             course_data['Int_Fees'] = 'Not available for 2021'
                         print('INTERNATIONAL FEE: ', course_data['Int_Fees'])
 
+    course_data['Remarks'] = remarks_list
+    del remarks_list
 
+    # duplicating entries with multiple cities for each city
+    for i in actual_cities:
+        course_data['City'] = possible_cities[i]
+        course_data_all.append(copy.deepcopy(course_data))
+    del actual_cities
+
+    # TABULATE THE DATA
+    desired_order_list = ['Level_Code', 'University', 'City', 'Course', 'Faculty', 'Int_Fees', 'Local_Fees',
+                          'Currency', 'Currency_Time', 'Duration', 'Duration_Time', 'Full_Time', 'Part_Time',
+                          'Prerequisite_1', 'Prerequisite_2', 'Prerequisite_3', 'Prerequisite_1_grade',
+                          'Prerequisite_2_grade', 'Prerequisite_3_grade', 'Website', 'Course_Lang', 'Availability',
+                          'Description', 'Career_Outcomes', 'Country', 'Online', 'Offline', 'Distance', 'Face_to_Face',
+                          'Blended', 'Remarks']
+
+    course_dict_keys = set().union(*(d.keys() for d in course_data_all))
+
+    with open(csv_file, 'w', encoding='utf-8', newline='') as output_file:
+        dict_writer = csv.DictWriter(output_file, course_dict_keys)
+        dict_writer.writeheader()
+        dict_writer.writerows(course_data_all)
+
+    with open(csv_file, 'r', encoding='utf-8') as infile, open('CQU_undergrad_ordered.csv', 'w', encoding='utf-8',
+                                                               newline='') as outfile:
+        writer = csv.DictWriter(outfile, fieldnames=desired_order_list)
+        # reorder the header first
+        writer.writeheader()
+        for row in csv.DictReader(infile):
+            # writes the reordered rows to the new file
+            writer.writerow(row)
