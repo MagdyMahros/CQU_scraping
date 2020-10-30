@@ -13,7 +13,7 @@ browser = webdriver.Chrome(executable_path=exec_path, options=option)
 
 # MAIN ROUTINE
 course_type_links = []
-each_url = 'https://www.cqu.edu.au/courses/find-a-course?meta_studyLevel_not=%22Short%20Course%22&meta_studyLevel_or=%22Level%201%3A%20Certificate%20I%22%2C%22Level%202%3A%20Certificate%20II%22%2C%22Level%203%3A%20Certificate%20III%22%2C%22Level%204%3A%20Certificate%20IV%22%2C%22Level%205%3A%20Diploma%22%2C%22Level%206%3A%20Advanced%20Diploma%22%2C%22Level%206%3A%20Associate%20Degree%22%2C%22Level%207%3A%20Bachelor%20Degree%22%2C%22Level%208%3A%20Bachelor%20Honours%20Degree%22&collection=2019-cqu-courses&fmo=true&query='
+each_url = 'https://www.cqu.edu.au/courses/find-a-course?meta_studyLevel_not=%22Short%20Course%22&collection=2019-cqu-courses&fmo=true&query=&meta_studyLevel_or=%22Level%208%3A%20Graduate%20Certificate%22%2C%22Level%208%3A%20Graduate%20Diploma%22%2C%22Level%209%3A%20Masters%20Degree%20(Coursework)%22%2C%22Level%209%3A%20Masters%20Degree%20(Extended)%22%2C%22Level%209%3A%20Masters%20Degree%20(Research)%22%2C%22Level%2010%3A%20Doctoral%20Degree%22'
 
 # LINK EXTRACTOR =============================================================================
 course_links = []
@@ -22,7 +22,7 @@ pages = set()
 
 pages.add(each_url)
 i = 1
-while i <= 169:
+while i <= 73:
     cur_url = each_url + '&start_rank=' + str(i) + '&sort=metasortLevel'
     pages.add(cur_url)
     # print(cur_url)
@@ -47,7 +47,7 @@ for j in pages:
                     course_links.append(link)
 
 # FILE
-course_links_file_path = os.getcwd().replace('\\', '/') + '/CQU_bachelor_links.txt'
+course_links_file_path = os.getcwd().replace('\\', '/') + '/CQU_postgrad_links.txt'
 course_links_file = open(course_links_file_path, 'w')
 for i in course_links:
     if i is not None and i != "" and i != "\n":
